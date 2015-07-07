@@ -1,7 +1,7 @@
 HTTP-Traceroute
 =======
 
-This project has been inspired by Digininja's HTTP traceroute available [here]() and because I wanted to give it a shot with Go. 
+This project has been inspired by Digininja's HTTP traceroute available [here](https://digi.ninja/projects/http_traceroute.php) and because I wanted to give it a shot with Go. 
 
 #### How does it work? 
 
