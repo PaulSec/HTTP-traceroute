@@ -29,8 +29,20 @@ func (l LogRedirects) RoundTrip(req *http.Request) (resp *http.Response, err err
 
             fmt.Println("\n\n#### Headers ####\n")
 
+            var max int = 0
+            var format_headers string
+
+            for k := range resp.Header {
+                if len(k) > max {
+                    max = len(k)
+                }
+            }
+
+            format_headers = fmt.Sprint("%-", max, "s:%s\n")
+
+
             for k, v := range resp.Header {
-                fmt.Printf("%-20s:%s\n", k, v[0])
+                fmt.Printf(format_headers, k, v[0])
             }
 
             fmt.Println("\n\n#### Cookies ####\n")
@@ -66,8 +78,20 @@ func main() {
 
     // display information for the last request
     fmt.Println("\n\n#### Headers ####\n")
+    var max int = 0
+    var format_headers string
+
+    for k := range resp.Header {
+        if len(k) > max {
+            max = len(k)
+        }
+    }
+
+    format_headers = fmt.Sprint("%-", max, "s:%s\n")
+
+
     for k, v := range resp.Header {
-        fmt.Printf("%-20s:%s\n", k, v[0])
+        fmt.Printf(format_headers, k, v[0])
     }
 
     fmt.Println("\n\n#### Cookies ####\n")
