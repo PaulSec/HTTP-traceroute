@@ -1,105 +1,105 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "net/http"
-    "net/http/cookiejar"
+	"fmt"
+	"net/http"
+	"net/http/cookiejar"
+	"os"
 )
 
-type LogRedirects struct {
-        Transport http.RoundTripper
+type logRedirects struct {
+	Transport http.RoundTripper
 }
 
-func (l LogRedirects) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-    t := l.Transport
-    if t == nil {
-        t = http.DefaultTransport
-    }
-    resp, err = t.RoundTrip(req)
-    if err != nil {
-        return
-    }
-    switch resp.StatusCode {
-        case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect:
-            fmt.Println("#### Redirected ####\n")
-            fmt.Println("Request for:", req.URL)
-            fmt.Println("Redirected to:", resp.Header.Get("location"))
-            fmt.Println("Status code:", resp.StatusCode)
+func (l logRedirects) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	t := l.Transport
+	if t == nil {
+		t = http.DefaultTransport
+	}
 
-            fmt.Println("\n\n#### Headers ####\n")
+	if resp, err = t.RoundTrip(req); err != nil {
+		return
+	}
 
-            var max int = 0
-            var format_headers string
+	switch resp.StatusCode {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect:
+		fmt.Println("#### Redirected ####\n")
+		fmt.Println("Request for:", req.URL)
+		fmt.Println("Redirected to:", resp.Header.Get("location"))
+		fmt.Println("Status code:", resp.StatusCode)
 
-            for k := range resp.Header {
-                if len(k) > max {
-                    max = len(k)
-                }
-            }
+		fmt.Println("\n\n#### Headers ####\n")
 
-            format_headers = fmt.Sprint("%-", max, "s:%s\n")
+		var max int
+		for k := range resp.Header {
+			if len(k) > max {
+				max = len(k)
+			}
+		}
+		formatHeaders := fmt.Sprint("%-", max, "s: %s\n")
 
+		for k, v := range resp.Header {
+			fmt.Printf(formatHeaders, k, v[0])
+		}
 
-            for k, v := range resp.Header {
-                fmt.Printf(format_headers, k, v[0])
-            }
-
-            fmt.Println("\n\n#### Cookies ####\n")
-            for _, cookie := range resp.Header[http.CanonicalHeaderKey("Set-Cookie")] {
-                fmt.Println(cookie)
-            }
-
-            if resp.Header[http.CanonicalHeaderKey("Set-Cookie")] == nil {
-                fmt.Println("No cookies created.")
-            }
-
-            fmt.Println("\n")
-    }
-    return
+		fmt.Println("\n\n#### Cookies ####\n")
+		if resp.Header[http.CanonicalHeaderKey("Set-Cookie")] == nil {
+			fmt.Println("No cookies created.")
+		} else {
+			for _, cookie := range resp.Header[http.CanonicalHeaderKey("Set-Cookie")] {
+				fmt.Println(cookie)
+			}
+		}
+		fmt.Println("\n")
+	}
+	return
 }
 
 func main() {
-    // create a cookiejar
-    cookieJar, _ := cookiejar.New(nil)
 
-    // create a client
-    client := http.Client{Jar: cookieJar, Transport: LogRedirects{}}
+	if len(os.Args) < 2 {
+		fmt.Println("\nYou need to specify an URL as parameter\n")
+		os.Exit(1)
+	}
 
-    fmt.Println("Initial request to:", os.Args[1], "\n")
+	// create a cookiejar
+	cookieJar, _ := cookiejar.New(nil)
 
-    // do the request
-    resp, err := client.Get(os.Args[1])
-    if err != nil {
-        fmt.Println("[!] Error while accessing the host.")
-        return
-    }
-    fmt.Println("Final URL is", resp.Request.URL, " with status code: ", resp.StatusCode)
+	// create a client
+	client := http.Client{Jar: cookieJar, Transport: logRedirects{}}
 
-    // display information for the last request
-    fmt.Println("\n\n#### Headers ####\n")
-    var max int = 0
-    var format_headers string
+	fmt.Println("Initial request to:", os.Args[1], "\n")
 
-    for k := range resp.Header {
-        if len(k) > max {
-            max = len(k)
-        }
-    }
+	// do the request
+	resp, err := client.Get(os.Args[1])
+	if err != nil {
+		fmt.Printf("[!] Error while accessing the host: %s", err)
+		return
+	}
+	fmt.Println("Final URL is", resp.Request.URL, " with status code: ", resp.StatusCode)
 
-    format_headers = fmt.Sprint("%-", max, "s:%s\n")
+	// display information for the last request
+	fmt.Println("\n\n#### Headers ####\n")
 
+	var max int
+	for k := range resp.Header {
+		if len(k) > max {
+			max = len(k)
+		}
+	}
+	formatHeaders := fmt.Sprint("%-", max, "s: %s\n")
 
-    for k, v := range resp.Header {
-        fmt.Printf(format_headers, k, v[0])
-    }
+	for k, v := range resp.Header {
+		fmt.Printf(formatHeaders, k, v[0])
+	}
 
-    fmt.Println("\n\n#### Cookies ####\n")
-    for _, cookie := range resp.Header[http.CanonicalHeaderKey("Set-Cookie")] {
-        fmt.Println(cookie)
-    }
+	fmt.Println("\n\n#### Cookies ####\n")
 
-    if resp.Header[http.CanonicalHeaderKey("Set-Cookie")] == nil {
-        fmt.Println("No cookies created.")
-    }
+	if resp.Header[http.CanonicalHeaderKey("Set-Cookie")] == nil {
+		fmt.Println("No cookies created.")
+	} else {
+		for _, cookie := range resp.Header[http.CanonicalHeaderKey("Set-Cookie")] {
+			fmt.Println(cookie)
+		}
+	}
 }
